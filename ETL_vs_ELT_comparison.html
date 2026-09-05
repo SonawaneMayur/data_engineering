@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL vs ELT: Snowflake & Databricks Architecture</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border-color: #cbd5e1;
+            
+            --snowflake-blue: #29b5e8;
+            --databricks-orange: #ff3621;
+            
+            --e-color: #10b981;
+            --t-color: #3b82f6;
+            --l-color: #8b5cf6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.2rem;
+            color: #1e293b;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            color: white;
+            font-size: 0.85rem;
+        }
+        
+        .badge.e { background-color: var(--e-color); }
+        .badge.t { background-color: var(--t-color); }
+        .badge.l { background-color: var(--l-color); }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            color: #1e293b;
+            margin: 40px 0 20px 0;
+            padding-left: 10px;
+            border-left: 5px solid #64748b;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card.snowflake { border-top: 5px solid var(--snowflake-blue); }
+        .card.databricks { border-top: 5px solid var(--databricks-orange); }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .platform-tag {
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .snowflake .platform-tag { background: #e0f4fc; color: #0284c7; }
+        .databricks .platform-tag { background: #ffebe9; color: #ch3621; color: #d92414; }
+
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            position: relative;
+        }
+
+        .step-info {
+            flex-grow: 1;
+            margin-left: 12px;
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .step-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .arrow {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            margin: -4px 0;
+            line-height: 1;
+        }
+
+        .footer-note {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ETL vs ELT Architecture Blueprint</h1>
+        <p style="color: var(--text-muted); margin: 0 0 15px 0;">A side-by-side single-page visualization comparing pipeline paradigms across Snowflake and Databricks.</p>
+        
+        <div class="legend">
+            <div class="legend-item"><span class="badge e">E</span> Extract (Data Discovery & Ingestion)</div>
+            <div class="legend-item"><span class="badge l">L</span> Load (Target Storage Delivery)</div>
+            <div class="legend-item"><span class="badge t">T</span> Transform (Business Logic & Cleaning)</div>
+        </div>
+    </header>
+
+    <!-- SECTION 1: ETL -->
+    <div class="section-title">The ETL Paradigm (Transform Outside / Before Target)</div>
+    <div class="grid">
+        
+        <!-- Snowflake ETL -->
+        <div class="card snowflake">
+            <div class="card-header">
+                <span>Traditional ETL Flow</span>
+                <span class="platform-tag">Snowflake</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="step">
+                    <span class="badge e">E</span>
+                    <div class="step-info">
+                        <div class="step-title">Source Systems</div>
+                        <div class="step-desc">Application DBs, CRM, APIs, Webhooks</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step" style="border: 2px solid var(--t-color);">
+                    <span class="badge t">T</span>
+                    <div class="step-info">
+                        <div class="step-title">External Compute Tool</div>
+                        <div class="step-desc">Informatica, Talend, Airflow, Spark outside Snowflake</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step">
+                    <span class="badge l">L</span>
+                    <div class="step-info">
+                        <div class="step-title">COPY INTO / Ingestion</div>
+                        <div class="step-desc">Perfectly structural data loaded straight to native tables</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step">
+                    <div class="step-info" style="margin-left:0; text-align:center; font-weight:600; color:#0369a1;">
+                        Clean Enterprise Warehouse Tables
+                    </div>
+                </div>
+            </div>
+            <div class="footer-note">
+                <strong>Architectural Note:</strong> Rare for modern Snowflake setups. Compute heavy lifting happens entirely outside Snowflake before writing optimized micro-partitions.
+            </div>
+        </div>
+
+        <!-- Databricks ETL -->
+        <div class="card databricks">
+            <div class="card-header">
+                <span>Traditional ETL Flow</span>
+                <span class="platform-tag">Databricks</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="step">
+                    <span class="badge e">E</span>
+                    <div class="step-info">
+                        <div class="step-title">Source Systems</div>
+                        <div class="step-desc">Raw Operational Storage, Kafka, IoT Streams</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step" style="border: 2px solid var(--t-color);">
+                    <span class="badge t">T</span>
+                    <div class="step-info">
+                        <div class="step-title">Transient Spark Cluster</div>
+                        <div class="step-desc">Spark processing cluster converts, cleans, and structures data in-memory</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step">
+                    <span class="badge l">L</span>
+                    <div class="step-info">
+                        <div class="step-title">Delta Storage Target</div>
+                        <div class="step-desc">Saves clean structured Parquet/Delta parquet files to object storage</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step">
+                    <div class="step-info" style="margin-left:0; text-align:center; font-weight:600; color:#b91c1c;">
+                        Production Delta Tables (Final Data Only)
+                    </div>
+                </div>
+            </div>
+            <div class="footer-note">
+                <strong>Architectural Note:</strong> Data Lakehouse natively discourages this because it discards the original raw files, preventing you from reprocessing or re-extracting later if business rules change.
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: ELT -->
+    <div class="section-title">The ELT Paradigm (Load Instantly / Transform Inside)</div>
+    <div class="grid">
+        
+        <!-- Snowflake ELT -->
+        <div class="card snowflake">
+            <div class="card-header">
+                <span>Modern Native ELT Pipeline</span>
+                <span class="platform-tag">Snowflake</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="step">
+                    <span class="badge e">E</span>
+                    <span class="badge l" style="margin-left:4px;">L</span>
+                    <div class="step-info">
+                        <div class="step-title">Snowpipe / COPY INTO</div>
+                        <div class="step-desc">Extracts files and dumps raw variant JSON/CSV immediately into a Stage</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step">
+                    <span class="badge l">L</span>
+                    <div class="step-info">
+                        <div class="step-title">Snowflake Internal Stage / Landing Table</div>
+                        <div class="step-desc">Raw structural state. Low cost storage. Unparsed.</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step" style="border: 2px solid var(--t-color);">
+                    <span class="badge t">T</span>
+                    <div class="step-info">
+                        <div class="step-title">Virtual Warehouse Compute Layer</div>
+                        <div class="step-desc">Executes internal SQL, dbt pipelines, or Snowpark (Python) scripts</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step">
+                    <span class="badge l">L</span>
+                    <div class="step-info">
+                        <div class="step-title">Final Production Tables</div>
+                        <div class="step-desc">Loads fully modeled columns into structured, optimized micro-partitions</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-note">
+                <strong>Architectural Note:</strong> Highly recommended for Snowflake. Keeps a lightweight ingestion pipeline and shifts all data processing costs strictly into elastic Virtual Warehouse compute.
+            </div>
+        </div>
+
+        <!-- Databricks Medallion (ELT) -->
+        <div class="card databricks">
+            <div class="card-header">
+                <span>Continuous Medallion ELT Pipeline</span>
+                <span class="platform-tag">Databricks</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="step">
+                    <span class="badge e">E</span>
+                    <span class="badge l" style="margin-left:4px;">L</span>
+                    <div class="step-info">
+                        <div class="step-title">Auto Loader / Ingestion Cloud Files</div>
+                        <div class="step-desc">Grabs file modifications, loads them directly into raw table</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step">
+                    <span class="badge l">L</span>
+                    <div class="step-info">
+                        <div class="step-title">BRONZE TIER (Raw Delta Storage)</div>
+                        <div class="step-desc">Append-only data sink holding completely untouched raw history</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step" style="border: 2px solid var(--t-color);">
+                    <span class="badge t">T</span>
+                    <span class="badge l" style="margin-left:4px;">L</span>
+                    <div class="step-info">
+                        <div class="step-title">SILVER TIER (Enriched Data via Spark/Photon)</div>
+                        <div class="step-desc">Cleans null fields, drops duplicates, enforces strict schemas</div>
+                    </div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step" style="border: 2px solid var(--t-color);">
+                    <span class="badge t">T</span>
+                    <span class="badge l" style="margin-left:4px;">L</span>
+                    <div class="step-info">
+                        <div class="step-title">GOLD TIER (Aggregated BI Star Schema)</div>
+                        <div class="step-desc">Applies core business math, aggregates KPIs, ready for BI dashboards</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-note">
+                <strong>Architectural Note:</strong> The gold standard for Lakehouses. Pipelines continuously chain T ➔ L from Bronze to Gold tiers using scalable Spark compute engines.
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
