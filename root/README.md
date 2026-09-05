@@ -11,7 +11,7 @@ Understanding the differences between **ETL (Extract, Transform, Load)** and **E
 
 ### 📊 Live Interactive Guide
 You can view the full HTML comparison page directly in your browser:
-👉 **[View the ETL vs. ELT Interactive Visual Comparison]([https://sonawanemayur.github.io/data_engineering/](https://sonawanemayur.github.io/data_engineering/root/ETL_vs_ELT_comparison.html))**
+👉 **[View the ETL vs. ELT Interactive Visual Comparison](https://sonawanemayur.github.io/data_engineering/root/ETL_vs_ELT_comparison.html)**
 
 ---
 
